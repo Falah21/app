@@ -43,7 +43,7 @@ def header_kpu():
         st.markdown(
             """
             <div style="text-align: center;">
-                <img src="logo_kpu.png" width="120">
+                <img src="logo_kpu.png" width="450">
                 <h2 style='color:#B22222;'>Aplikasi Arsip KPU Kota Surabaya</h2>
                 <p style='font-size:16px;'>Selamat datang di aplikasi digitalisasi arsip KPU</p>
             </div>
