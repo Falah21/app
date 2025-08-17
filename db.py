@@ -1,8 +1,7 @@
-# db.py
+import os
 from pymongo import MongoClient
 
-# Ubah sesuai kebutuhan: bisa ke remote MongoDB Atlas atau mongodb lokal
-MONGO_URI = "mongodb+srv://ahmadihdafalah:amdryzen1010@cluster0.10a3ead.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+MONGO_URI = os.getenv("MONGO_URI")
 DB_NAME = "e_arsip"
 
 client = MongoClient(MONGO_URI)
