@@ -38,20 +38,23 @@ def preview_pdf_inline(file_path, height=600):
 # ---------------------------
 # UI: Header
 # ---------------------------
+import base64
+
 def header_kpu():
-    import streamlit as st, os
     if os.path.exists("logo_kpu.png"):
-        col1, col2, col3 = st.columns([1,2,1])
-        with col2:
-            st.image("logo_kpu.png", width=120)
-    st.markdown(
-        "<h2 style='text-align:center; color:#B22222;'>Aplikasi Arsip KPU Kota Surabaya</h2>",
-        unsafe_allow_html=True
-    )
-    st.markdown(
-        "<p style='text-align:center; font-size:16px;'>Selamat datang di aplikasi digitalisasi arsip KPU</p>",
-        unsafe_allow_html=True
-    )
+        with open("logo_kpu.png", "rb") as f:
+            data = base64.b64encode(f.read()).decode()
+        st.markdown(
+            f"""
+            <div style="text-align: center;">
+                <img src="data:image/png;base64,{data}" width="120">
+                <h2 style='color:#B22222;'>Aplikasi Arsip KPU Kota Surabaya</h2>
+                <p style='font-size:16px;'>Selamat datang di aplikasi digitalisasi arsip KPU</p>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
 
 # ---------------------------
 # Login Page
