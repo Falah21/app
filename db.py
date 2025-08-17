@@ -4,7 +4,7 @@ from pymongo import MongoClient
 MONGO_URI = os.getenv("MONGO_URI")
 DB_NAME = "e_arsip"
 
-client = MongoClient(MONGO_URI)
+client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
 db = client[DB_NAME]
 
 users_col = db["users"]
