@@ -56,3 +56,30 @@ def login_user(email, password):
         user.pop("password", None)  # hapus hash dari dict
         return True, user
     return False, "Email atau password salah"
+
+def reset_admin_user():
+    """
+    Hapus admin lama (berdasarkan ADMIN_EMAIL) dan buat ulang dengan password dari secrets/env.
+    """
+    email = _get_secret("ADMIN_EMAIL")
+    password = _get_secret("ADMIN_PASSWORD")
+    name = _get_secret("ADMIN_NAME", "Admin")
+
+    if not email or not password:
+        return False, "❌ ADMIN_EMAIL / ADMIN_PASSWORD belum diset di secrets/env"
+
+    # hapus admin lama
+    users_col.delete_many({"email": email})
+
+    # buat admin baru
+    hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
+    users_col.insert_one({
+        "name": name,
+        "email": email,
+        "password": hashed,
+        "role": "admin",
+        "active": True,
+        "created_at": datetime.utcnow()
+    })
+
+    return True, f"✅ Admin berhasil direset: {email}"
