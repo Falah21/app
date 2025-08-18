@@ -62,11 +62,8 @@ def page_login():
     email = st.text_input("Email", placeholder="Masukkan email anda")
     password = st.text_input("Password", placeholder="Masukkan password anda", type="password")
 
-    # Tombol lupa password
-    if st.button("Lupa kata sandi?", use_container_width=True):
-        st.session_state.auth_page = "forgot_password"
-        st.rerun()
-        
+    st.markdown("<a style='font-size:12px; color:#B22222;' href='#'>Lupa kata sandi?</a>", unsafe_allow_html=True)
+
     if st.button("Login", use_container_width=True):
         if not email or not password:
             st.error("Harap isi semua field.")
@@ -108,39 +105,6 @@ def page_register():
                 st.error(msg)
 
     if st.button("Kembali ke Login", use_container_width=True):
-        st.session_state.auth_page = "login"
-        st.rerun()
-
-# ---------------------------
-# Forgot Password Page
-# ---------------------------
-def page_forgot_password():
-    header_kpu()
-    st.markdown("### Lupa Password")
-
-    email = st.text_input("Masukkan email anda")
-    new_pass = st.text_input("Password Baru", type="password")
-    confirm_pass = st.text_input("Konfirmasi Password Baru", type="password")
-
-    if st.button("Reset Password", use_container_width=True):
-        if not email or not new_pass or not confirm_pass:
-            st.error("Harap isi semua field.")
-        elif new_pass != confirm_pass:
-            st.error("Password tidak sama.")
-        else:
-            user = users_col.find_one({"email": email})
-            if not user:
-                st.error("Email tidak ditemukan.")
-            else:
-                users_col.update_one(
-                    {"_id": user["_id"]},
-                    {"$set": {"password": hash_password(new_pass)}}
-                )
-                st.success("Password berhasil direset. Silakan login kembali.")
-                st.session_state.auth_page = "login"
-                st.rerun()
-
-    if st.button("⬅️ Kembali ke Login", use_container_width=True):
         st.session_state.auth_page = "login"
         st.rerun()
 
@@ -428,7 +392,5 @@ if not st.session_state.logged_in:
         page_login()
     elif st.session_state.auth_page == "register":
         page_register()
-    elif st.session_state.auth_page == "forgot_password":
-        page_forgot_password()
 else:
     page_dashboard()
