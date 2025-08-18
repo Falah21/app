@@ -116,7 +116,7 @@ def page_dashboard():
     role = user.get("role", "viewer")
     st.sidebar.write(f"👤 {user['name']} — ({role})")
 
-    menu_items = ["Dashboard", "Upload Dokumen", "Lihat Arsip", "Pencarian & Filter", "Profil", "Kelola Dokumen Anda"]
+    menu_items = ["Dashboard", "Lihat Arsip", "Pencarian & Filter",  "Upload Dokumen",  "Kelola Dokumen Anda", "Profil"]
     if role == "admin":
         menu_items.append("Kelola Kategori")
         menu_items.append("Manajemen User")
