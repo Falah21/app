@@ -9,6 +9,7 @@ from db import users_col
 from utils import file_to_base64
 from datetime import datetime
 import os
+import base64
 
 st.set_page_config(page_title="Aplikasi Arsip KPU Kota Surabaya", layout="wide")
 
@@ -22,7 +23,7 @@ if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.user = None
 if "auth_page" not in st.session_state:
-    st.session_state.auth_page = "login"
+    st.session_state.auth_page = "landing"   # default ke landing page
 
 # ---------------------------
 # Helper: Preview PDF
@@ -36,10 +37,84 @@ def preview_pdf_inline(file_path, height=600):
     st.markdown(href, unsafe_allow_html=True)
 
 # ---------------------------
-# UI: Header
+# Landing Page
 # ---------------------------
-import base64
+def landing_header():
+    st.markdown("""
+    <style>
+    .navbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background-color: white;
+        padding: 10px 50px;
+        border-bottom: 2px solid #eee;
+    }
+    .navbar-left img {
+        height: 50px;
+    }
+    .navbar-right a {
+        margin-left: 20px;
+        text-decoration: none;
+        color: black;
+        font-weight: 500;
+    }
+    .hero {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background-color: white;
+        padding: 40px 50px;
+    }
+    .hero-text {
+        max-width: 50%;
+    }
+    .hero-text h1 {
+        color: #800000; /* maroon */
+        font-size: 36px;
+        margin-bottom: 20px;
+    }
+    .hero-text p {
+        color: black;
+        font-size: 18px;
+        line-height: 1.5;
+    }
+    .hero-img img {
+        max-width: 400px;
+    }
+    </style>
 
+    <div class="navbar">
+        <div class="navbar-left">
+            <img src="logo_kpu.png">
+        </div>
+        <div class="navbar-right">
+            <a href="#">About</a>
+            <a href="#">Helpdesk</a>
+            <a href="#">Blog</a>
+            <a href="#login">Login</a>
+        </div>
+    </div>
+
+    <div class="hero">
+        <div class="hero-text">
+            <h1>Aplikasi Arsip KPU Kota Surabaya</h1>
+            <p>Selamat datang di aplikasi digitalisasi arsip KPU. 
+            Pengelolaan arsip yang profesional, aman, dan mudah untuk mendukung transparansi dan akuntabilitas publik.</p>
+        </div>
+        <div class="hero-img">
+            <img src="5edd2dd9-5bc2-4037-a3a9-555e87740b2e.png">
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    if st.button("➡️ Login", key="btn_landing_login"):
+        st.session_state.auth_page = "login"
+        st.rerun()
+
+# ---------------------------
+# Header kecil (logo + judul)
+# ---------------------------
 def header_kpu():
     if os.path.exists("logo_kpu.png"):
         with open("logo_kpu.png", "rb") as f:
@@ -54,7 +129,6 @@ def header_kpu():
             """,
             unsafe_allow_html=True
         )
-
 
 # ---------------------------
 # Login Page
@@ -175,14 +249,12 @@ def page_dashboard():
                 st.success("Dokumen berhasil diupload (ID: %s)" % doc_id)
 
     # ----------------- Lihat Arsip -----------------
-    # ----------------- Lihat Arsip -----------------
     elif choice == "Lihat Arsip":
         st.title("Daftar Dokumen")
         docs = list_documents()
         if not docs:
             st.info("Belum ada dokumen.")
         else:
-            # ================= Tabel Ringkas =================
             st.subheader("📑 Tabel Daftar Dokumen")
             table_data = []
             for i, d in enumerate(docs, start=1):
@@ -198,7 +270,6 @@ def page_dashboard():
             st.dataframe(df_table, use_container_width=True)
 
             st.markdown("---")
-            # ================= Detail per Dokumen =================
             for d in docs:
                 doc_id = str(d["_id"])
                 cols = st.columns([4,1,1,1])
@@ -310,15 +381,21 @@ def page_dashboard():
     elif choice == "Logout":
         st.session_state.logged_in = False
         st.session_state.user = None
+        st.session_state.auth_page = "landing"
         st.rerun()
 
 # ---------------------------
-# Routing Auth
+# Routing
 # ---------------------------
 if not st.session_state.logged_in:
-    if st.session_state.auth_page == "login":
+    if st.session_state.auth_page == "landing":
+        landing_header()
+    elif st.session_state.auth_page == "login":
         page_login()
     elif st.session_state.auth_page == "register":
         page_register()
+    else:
+        st.session_state.auth_page = "landing"
+        st.rerun()
 else:
     page_dashboard()
