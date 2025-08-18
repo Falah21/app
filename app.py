@@ -8,7 +8,7 @@ from documents import (
 from db import users_col
 from utils import file_to_base64
 from datetime import datetime
-import os
+import os, base64
 
 st.set_page_config(page_title="Aplikasi Arsip KPU Kota Surabaya", layout="wide")
 
@@ -38,8 +38,6 @@ def preview_pdf_inline(file_path, height=600):
 # ---------------------------
 # UI: Header
 # ---------------------------
-import base64
-
 def header_kpu():
     if os.path.exists("logo_kpu.png"):
         with open("logo_kpu.png", "rb") as f:
@@ -54,7 +52,6 @@ def header_kpu():
             """,
             unsafe_allow_html=True
         )
-
 
 # ---------------------------
 # Login Page
@@ -119,7 +116,7 @@ def page_dashboard():
     role = user.get("role", "viewer")
     st.sidebar.write(f"👤 {user['name']} — ({role})")
 
-    menu_items = ["Dashboard", "Upload Dokumen", "Lihat Arsip", "Pencarian & Filter"]
+    menu_items = ["Dashboard", "Upload Dokumen", "Lihat Arsip", "Pencarian & Filter", "Profil", "Kelola Dokumen Anda"]
     if role == "admin":
         menu_items.append("Kelola Kategori")
         menu_items.append("Manajemen User")
@@ -157,6 +154,73 @@ def page_dashboard():
         else:
             st.info("Belum ada aktivitas upload.")
 
+    # ----------------- Profil -----------------
+    elif choice == "Profil":
+        st.title("Profil Pengguna")
+        st.write(f"**Nama**: {user['name']}")
+        st.write(f"**Email**: {user['email']}")
+        st.write(f"**Role**: {user['role']}")
+        st.write(f"**Dibuat pada**: {user.get('created_at', 'N/A')}")
+
+    # ----------------- Kelola Dokumen Anda -----------------
+    elif choice == "Kelola Dokumen Anda":
+        st.title("Dokumen Anda")
+        docs = list_documents({"uploader_id": user["_id"]})
+        if not docs:
+            st.info("Anda belum mengupload dokumen.")
+        else:
+            for d in docs:
+                doc_id = str(d["_id"])
+                st.markdown(f"### {d.get('title')}")
+                st.write(f"Kategori: {d.get('category')}  • Tahun: {d.get('year')}")
+                st.write(f"Deskripsi: {d.get('description', '')}")
+                st.write(f"Uploaded: {d.get('uploaded_at')}")
+
+                # ---- Tombol aksi ----
+                col1, col2, col3, col4 = st.columns([1,1,1,1])
+                with col1:
+                    if os.path.exists(d.get("file_path","")):
+                        with open(d["file_path"], "rb") as f:
+                            file_bytes = f.read()
+                            st.download_button("Download", file_bytes, file_name=d.get("original_filename", "dokumen.pdf"), key=f"dl_{doc_id}")
+                with col2:
+                    with st.expander("Preview Dokumen"):
+                        if os.path.exists(d.get("file_path","")):
+                            preview_pdf_inline(d["file_path"], height=400)
+                with col3:
+                    if st.button("Edit Metadata", key=f"edit_{doc_id}"):
+                        st.session_state[f"editing_{doc_id}"] = True
+                        st.rerun()
+                with col4:
+                    if st.button("Hapus", key=f"hapus_self_{doc_id}"):
+                        ok = delete_document(doc_id)
+                        if ok:
+                            st.success("Dokumen dihapus.")
+                            st.rerun()
+                # ---- Form Edit Metadata ----
+                if st.session_state.get(f"editing_{doc_id}", False):
+                    st.subheader("Edit Metadata")
+                    new_title = st.text_input("Judul", value=d.get("title",""), key=f"title_{doc_id}")
+                    new_desc = st.text_area("Deskripsi", value=d.get("description",""), key=f"desc_{doc_id}")
+                    new_cat = st.selectbox("Kategori", list_categories(), index=list_categories().index(d.get("category")) if d.get("category") in list_categories() else 0, key=f"cat_{doc_id}")
+                    new_year = st.number_input("Tahun", min_value=1900, max_value=2100, value=int(d.get("year", datetime.utcnow().year)), key=f"year_{doc_id}")
+                    if st.button("Simpan", key=f"simpan_{doc_id}"):
+                        ok = update_metadata(doc_id, {
+                            "title": new_title.strip(),
+                            "description": new_desc.strip(),
+                            "category": new_cat,
+                            "year": int(new_year)
+                        })
+                        if ok:
+                            st.success("Metadata diperbarui.")
+                            st.session_state[f"editing_{doc_id}"] = False
+                            st.rerun()
+                    if st.button("Batal", key=f"batal_{doc_id}"):
+                        st.session_state[f"editing_{doc_id}"] = False
+                        st.rerun()
+
+                st.markdown("---")
+
     # ----------------- Upload -----------------
     elif choice == "Upload Dokumen":
         st.title("Upload Dokumen")
@@ -175,35 +239,43 @@ def page_dashboard():
                 st.success("Dokumen berhasil diupload (ID: %s)" % doc_id)
 
     # ----------------- Lihat Arsip -----------------
-    # ----------------- Lihat Arsip -----------------
     elif choice == "Lihat Arsip":
         st.title("Daftar Dokumen")
         docs = list_documents()
         if not docs:
             st.info("Belum ada dokumen.")
         else:
-            # ================= Tabel Ringkas =================
+            # mapping user id -> nama
+            user_map = {str(u["_id"]): u.get("name", "Unknown") for u in users_col.find()}
+
             st.subheader("📑 Tabel Daftar Dokumen")
             table_data = []
             for i, d in enumerate(docs, start=1):
+                uploader_name = user_map.get(str(d.get("uploader_id")), d.get("uploader_id"))
                 table_data.append({
                     "No": i,
                     "Tanggal Upload": d.get("uploaded_at", ""),
                     "Nama Dokumen": d.get("title", ""),
                     "Kategori": d.get("category", ""),
                     "Tahun": d.get("year", ""),
-                    "Pengupload": d.get("uploader_name", d.get("uploader_id", ""))
+                    "Pengupload": uploader_name
                 })
             df_table = pd.DataFrame(table_data)
             st.dataframe(df_table, use_container_width=True)
 
             st.markdown("---")
-            # ================= Detail per Dokumen =================
             for d in docs:
                 doc_id = str(d["_id"])
+                uploader_name = user_map.get(str(d.get("uploader_id")), d.get("uploader_id"))
+
                 cols = st.columns([4,1,1,1])
                 with cols[0]:
-                    st.markdown(f"**{d.get('title')}**  \nKategori: {d.get('category')}  • Tahun: {d.get('year')}  \nUploader: {d.get('uploader_id')}  \nUploaded: {d.get('uploaded_at')}")
+                    st.markdown(
+                        f"**{d.get('title')}**  \n"
+                        f"Kategori: {d.get('category')}  • Tahun: {d.get('year')}  \n"
+                        f"Uploader: {uploader_name}  \n"
+                        f"Uploaded: {d.get('uploaded_at')}"
+                    )
                     st.write(d.get("description", ""))
                 with cols[1]:
                     if os.path.exists(d.get("file_path","")):
