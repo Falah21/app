@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from auth import register_user, login_user, create_admin_if_not_exists, hash_password
+from auth import register_user, login_user, create_admin_if_not_exists
 from documents import (
     ensure_default_categories, list_categories, add_category, remove_category,
     upload_document, list_documents, update_metadata, replace_file, delete_document
