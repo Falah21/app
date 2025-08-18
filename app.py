@@ -20,6 +20,8 @@ create_admin_if_not_exists()
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.user = None
+if "page" not in st.session_state:
+    st.session_state.page = "landing"
 
 # ---------------------------
 # Helper
@@ -39,103 +41,57 @@ def get_logo_base64():
     return None
 
 # ---------------------------
-# Landing Page
+# Navbar
 # ---------------------------
-def landing_header():
+def navbar():
     logo_b64 = get_logo_base64()
-    logo_html = f'<img src="data:image/png;base64,{logo_b64}" height="50">' if logo_b64 else ""
+    col1, col2, col3, col4, col5 = st.columns([1,2,1,1,1])
+    with col1:
+        if logo_b64:
+            st.image(base64.b64decode(logo_b64), width=50)
+    with col2:
+        if st.button("About"):
+            st.session_state.page = "about"
+    with col3:
+        if st.button("Helpdesk"):
+            st.session_state.page = "helpdesk"
+    with col4:
+        if st.button("Blog"):
+            st.session_state.page = "blog"
+    with col5:
+        if st.button("Login"):
+            st.session_state.page = "login"
 
-    st.markdown(f"""
-    <style>
-    .navbar {{
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        background-color: white;
-        padding: 10px 50px;
-        border-bottom: 2px solid #eee;
-    }}
-    .navbar-right button {{
-        margin-left: 20px;
-        background: none;
-        border: none;
-        color: black;
-        font-weight: 500;
-        font-size: 16px;
-        cursor: pointer;
-    }}
-    .hero {{
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        background-color: white;
-        padding: 40px 50px;
-    }}
-    .hero-text {{
-        max-width: 50%;
-    }}
-    .hero-text h1 {{
-        color: #800000;
-        font-size: 36px;
-        margin-bottom: 20px;
-    }}
-    .hero-text p {{
-        color: black;
-        font-size: 18px;
-        line-height: 1.5;
-    }}
-    .hero-img img {{
-        max-width: 400px;
-    }}
-    </style>
-
-    <div class="navbar">
-        <div class="navbar-left">
-            {logo_html}
-        </div>
-        <div class="navbar-right">
-            <form action="" method="get">
-                <button name="nav" value="about">About</button>
-                <button name="nav" value="helpdesk">Helpdesk</button>
-                <button name="nav" value="blog">Blog</button>
-                <button name="nav" value="login">Login</button>
-            </form>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
+# ---------------------------
+# Pages
+# ---------------------------
+def page_landing():
+    navbar()
     st.markdown("""
-    <div class="hero">
-        <div class="hero-text">
-            <h1>Aplikasi Arsip KPU Kota Surabaya</h1>
-            <p>Selamat datang di aplikasi digitalisasi arsip KPU. 
-            Pengelolaan arsip yang profesional, aman, dan mudah untuk mendukung transparansi dan akuntabilitas publik.</p>
-        </div>
-        <div class="hero-img">
-            <img src="5edd2dd9-5bc2-4037-a3a9-555e87740b2e.png">
-        </div>
+    <div style="padding:40px;">
+        <h1 style="color:#800000;">Aplikasi Arsip KPU Kota Surabaya</h1>
+        <p>Selamat datang di aplikasi digitalisasi arsip KPU. 
+        Pengelolaan arsip yang profesional, aman, dan mudah untuk mendukung transparansi dan akuntabilitas publik.</p>
     </div>
     """, unsafe_allow_html=True)
 
-# ---------------------------
-# Extra Pages
-# ---------------------------
 def page_about():
+    navbar()
     st.title("Tentang Aplikasi")
     st.write("📌 Aplikasi Arsip KPU Kota Surabaya dibuat untuk mendigitalisasi arsip dokumen agar lebih mudah diakses, aman, dan transparan.")
 
 def page_helpdesk():
+    navbar()
     st.title("Helpdesk")
     st.write("☎️ Hubungi helpdesk KPU Surabaya di email: **helpdesk@kpu.go.id** atau telepon: (031) 1234567")
 
 def page_blog():
+    navbar()
     st.title("Blog")
     st.write("📰 Artikel & update terbaru seputar arsip KPU akan muncul di sini.")
 
-# ---------------------------
-# Login / Register
-# ---------------------------
 def page_login():
+    navbar()
     st.title("Login")
     email = st.text_input("Email")
     password = st.text_input("Password", type="password")
@@ -148,15 +104,17 @@ def page_login():
             if ok:
                 st.session_state.logged_in = True
                 st.session_state.user = res
+                st.session_state.page = "dashboard"
                 st.rerun()
             else:
                 st.error(res)
 
     if st.button("Registrasi"):
-        st.query_params["nav"] = "register"
+        st.session_state.page = "register"
         st.rerun()
 
 def page_register():
+    navbar()
     st.title("Registrasi")
     r_name = st.text_input("Nama Lengkap")
     r_email = st.text_input("Email")
@@ -170,13 +128,13 @@ def page_register():
             ok, msg = register_user(r_name.strip(), r_email.strip(), r_pass, r_role)
             if ok:
                 st.success(msg + " Silakan login.")
-                st.query_params["nav"] = "login"
+                st.session_state.page = "login"
                 st.rerun()
             else:
                 st.error(msg)
 
     if st.button("Kembali ke Login"):
-        st.query_params["nav"] = "login"
+        st.session_state.page = "login"
         st.rerun()
 
 # ---------------------------
@@ -226,28 +184,26 @@ def page_dashboard():
     elif choice == "Logout":
         st.session_state.logged_in = False
         st.session_state.user = None
-        st.query_params["nav"] = "landing"
+        st.session_state.page = "landing"
         st.rerun()
 
 # ---------------------------
-# Routing
+# ROUTING
 # ---------------------------
 if not st.session_state.logged_in:
-    nav = st.query_params.get("nav", ["landing"])[0]
-
-    if nav == "landing":
-        landing_header()
-    elif nav == "login":
+    if st.session_state.page == "landing":
+        page_landing()
+    elif st.session_state.page == "login":
         page_login()
-    elif nav == "register":
+    elif st.session_state.page == "register":
         page_register()
-    elif nav == "about":
+    elif st.session_state.page == "about":
         page_about()
-    elif nav == "helpdesk":
+    elif st.session_state.page == "helpdesk":
         page_helpdesk()
-    elif nav == "blog":
+    elif st.session_state.page == "blog":
         page_blog()
     else:
-        landing_header()
+        page_landing()
 else:
     page_dashboard()
